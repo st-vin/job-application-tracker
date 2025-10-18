@@ -1,4 +1,4 @@
 package org.alvin.jobapplicationtracker.entity;
 
-public class User {
+public class UserEntity {
 }
