@@ -5,6 +5,7 @@ import org.alvin.jobapplicationtracker.entity.ApplicationEntity;
 import org.alvin.jobapplicationtracker.entity.UserEntity;
 import org.alvin.jobapplicationtracker.repository.ApplicationRepository;
 import org.alvin.jobapplicationtracker.repository.UserRepository;
+import org.alvin.jobapplicationtracker.repository.ReminderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,9 @@ public class JobapplicationtrackerApplication implements CommandLineRunner {
 
     @Autowired
     private ApplicationRepository applicationRepository;
+
+    @Autowired
+    private ReminderRepository reminderRepository;
 
     public static void main(String[] args) {
         SpringApplication.run(JobapplicationtrackerApplication.class, args);
