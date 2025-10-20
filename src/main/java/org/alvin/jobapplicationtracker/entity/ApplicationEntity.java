@@ -5,6 +5,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "application")
@@ -42,10 +44,22 @@ public class ApplicationEntity {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    // many to one relationship
+    // many-to-one relationship with user
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false) // foreign key column name
     private UserEntity user;
+
+    // one-to-many relationship with status_history
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
+    private List<StatusHistory> statusHistory = new ArrayList<>();
+
+    // one-to-many relationship with remainder
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
+    private List<Reminder> remainder = new ArrayList<>();
+
+    // on-to-many relationship with interview_note
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
+    private List<InterviewNote> interviewNotes = new ArrayList<>();
 
     public ApplicationEntity() {
     }
@@ -172,5 +186,28 @@ public class ApplicationEntity {
 
     public void setUser(UserEntity user) {
         this.user = user;
+    }
+
+    public List<StatusHistory> getStatusHistory() {
+        return statusHistory;
+    }
+
+    public void setStatusHistory(List<StatusHistory> statusHistory) {
+        this.statusHistory = statusHistory;
+    }
+
+    public List<Reminder> getRemainder() {
+        return remainder;
+    }
+
+    public void setRemainder() {
+        this.remainder = remainder;
+    }
+
+    public List<InterviewNote> getInterviewNotes() {
+        return interviewNotes;
+    }
+    public void setInterviewNotes(List<InterviewNote> interviewNotes) {
+        this.interviewNotes = interviewNotes;
     }
 }
