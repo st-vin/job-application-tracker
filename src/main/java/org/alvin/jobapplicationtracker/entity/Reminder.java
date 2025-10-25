@@ -1,5 +1,6 @@
 package org.alvin.jobapplicationtracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -9,10 +10,11 @@ public class Reminder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id",  nullable = false)
+    @JsonBackReference // ✅ Prevents recursion
     private ApplicationEntity application;
 
     @Column(nullable = false)
@@ -27,8 +29,7 @@ public class Reminder {
     public Reminder() {
     }
 
-    public Reminder(long id, LocalDateTime reminderDate, String reminderMessage, boolean isSent) {
-        this.id = id;
+    public Reminder(LocalDateTime reminderDate, String reminderMessage, boolean isSent) {
         this.reminderDate = reminderDate;
         this.reminderMessage = reminderMessage;
         this.isSent = isSent;
