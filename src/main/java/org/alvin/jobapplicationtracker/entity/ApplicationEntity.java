@@ -1,15 +1,20 @@
 package org.alvin.jobapplicationtracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "application")
+@JsonIgnoreProperties({"hibernateLazyInitializer","Handler"})
 public class ApplicationEntity {
 
     @Id
@@ -26,7 +31,7 @@ public class ApplicationEntity {
     @Column(nullable = false)
     private ApplicationStatus status;
 
-    private String appliedDate;
+    private LocalDate appliedDate;
     private double salary;
     private String jobBoardSource;
 
@@ -45,31 +50,35 @@ public class ApplicationEntity {
     private LocalDateTime updatedAt;
 
     // many-to-one relationship with user
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false) // foreign key column name
+    @JsonBackReference // ✅ Prevent infinite loop
     private UserEntity user;
 
     // one-to-many relationship with status_history
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
     private List<StatusHistory> statusHistory = new ArrayList<>();
 
-    // one-to-many relationship with remainder
+    // one-to-many relationship with Reminder
+    @JsonManagedReference
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
-    private List<Reminder> remainder = new ArrayList<>();
+    private List<Reminder> Reminder = new ArrayList<>();
 
     // on-to-many relationship with interview_note
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
     private List<InterviewNote> interviewNotes = new ArrayList<>();
 
+    // no argument constructor
     public ApplicationEntity() {
     }
 
-    // constructors
+    // constructor
     public ApplicationEntity(
             String companyName,
             String position,
             ApplicationStatus status,
-            String appliedDate,
+            LocalDate appliedDate,
             double salary,
             String jobBoardSource,
             String jobUrl,
@@ -124,11 +133,11 @@ public class ApplicationEntity {
         this.status = status;
     }
 
-    public String getAppliedDate() {
+    public LocalDate getAppliedDate() {
         return appliedDate;
     }
 
-    public void setAppliedDate(String appliedDate) {
+    public void setAppliedDate(LocalDate appliedDate) {
         this.appliedDate = appliedDate;
     }
 
@@ -196,12 +205,12 @@ public class ApplicationEntity {
         this.statusHistory = statusHistory;
     }
 
-    public List<Reminder> getRemainder() {
-        return remainder;
+    public List<Reminder> getReminder() {
+        return Reminder;
     }
 
-    public void setRemainder() {
-        this.remainder = remainder;
+    public void setReminder() {
+        this.Reminder = Reminder;
     }
 
     public List<InterviewNote> getInterviewNotes() {
