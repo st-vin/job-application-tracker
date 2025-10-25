@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class InterviewNote {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id", nullable = false)
@@ -28,8 +28,7 @@ public class InterviewNote {
     public InterviewNote() {
     }
 
-    public InterviewNote(long id, String note, LocalDateTime createdAt, String interviewStage) {
-        this.id = id;
+    public InterviewNote(String note, LocalDateTime createdAt, String interviewStage) {
         this.note = note;
         this.createdAt = createdAt;
         this.interviewStage = interviewStage;
