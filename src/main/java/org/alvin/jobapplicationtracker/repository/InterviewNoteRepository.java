@@ -1,7 +1,7 @@
 package org.alvin.jobapplicationtracker.repository;
 
-import org.springframework.data.repository.CrudRepository;
 import org.alvin.jobapplicationtracker.entity.InterviewNote;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface InterviewNoteRepository extends CrudRepository<InterviewNote, Long> {
+public interface InterviewNoteRepository extends JpaRepository<InterviewNote, Long> {
 }
