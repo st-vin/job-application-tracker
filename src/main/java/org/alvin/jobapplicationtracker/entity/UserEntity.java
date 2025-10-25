@@ -1,5 +1,8 @@
 package org.alvin.jobapplicationtracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -9,6 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer","Handler"})
 public class UserEntity {
 
     @Id
@@ -31,6 +35,7 @@ public class UserEntity {
     @Column(updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
+    @JsonManagedReference
     // bidirectional relationship
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ApplicationEntity> applications = new ArrayList<>();
