@@ -1,5 +1,7 @@
 package org.alvin.jobapplicationtracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -7,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "status_history")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class StatusHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,6 +17,7 @@ public class StatusHistory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id", nullable = false)
+    @JsonBackReference("application-status_history")
     private ApplicationEntity application;
 
     @Enumerated(EnumType.STRING)
@@ -30,8 +34,8 @@ public class StatusHistory {
     public StatusHistory() {
     }
 
-    public StatusHistory(Long id, ApplicationEntity application, ApplicationStatus oldStatus, ApplicationStatus newStatus, LocalDateTime changedAt) {
-        this.id = id;
+    public StatusHistory(/*Long id,*/ ApplicationEntity application, ApplicationStatus oldStatus, ApplicationStatus newStatus, LocalDateTime changedAt) {
+        // this.id = id;
         this.application = application;
         this.oldStatus = oldStatus;
         this.newStatus = newStatus;
@@ -78,12 +82,6 @@ public class StatusHistory {
         this.changedAt = changedAt;
     }
 
-    public ApplicationEntity getApplicationEntity() {
-        return application;
-    }
-    public void setApplicationEntity(ApplicationEntity application) {
-        this.application = application;
-    }
 
     @Override
     public String toString() {
