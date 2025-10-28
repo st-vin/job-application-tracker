@@ -53,19 +53,21 @@ public class ApplicationEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false) // foreign key column name
-    @JsonBackReference // ✅ Prevent infinite loop
+    @JsonBackReference("user-applications") //  Prevent infinite loop
     private UserEntity user;
 
     // one-to-many relationship with status_history
+    @JsonManagedReference("application-status_history")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
     private List<StatusHistory> statusHistory = new ArrayList<>();
 
     // one-to-many relationship with Reminder
-    @JsonManagedReference
+    @JsonManagedReference("application-reminder")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
-    private List<Reminder> Reminder = new ArrayList<>();
+    private List<Reminder> reminders = new ArrayList<>();
 
-    // on-to-many relationship with interview_note
+    // one-to-many relationship with interview_note
+    @JsonManagedReference("application-interview_note")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "application")
     private List<InterviewNote> interviewNotes = new ArrayList<>();
 
@@ -205,12 +207,12 @@ public class ApplicationEntity {
         this.statusHistory = statusHistory;
     }
 
-    public List<Reminder> getReminder() {
-        return Reminder;
+    public List<Reminder> getReminders() {
+        return reminders;
     }
 
-    public void setReminder() {
-        this.Reminder = Reminder;
+    public void setReminders(List<Reminder> reminders) {
+        this.reminders = reminders;
     }
 
     public List<InterviewNote> getInterviewNotes() {
