@@ -1,11 +1,13 @@
 package org.alvin.jobapplicationtracker.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reminder")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Reminder {
 
     @Id
@@ -13,8 +15,8 @@ public class Reminder {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "application_id",  nullable = false)
-    @JsonBackReference // ✅ Prevents recursion
+    @JoinColumn(name = "application_id", nullable = false)
+    @JsonBackReference("application-reminder") // ✅ Prevents recursion
     private ApplicationEntity application;
 
     @Column(nullable = false)
@@ -59,7 +61,7 @@ public class Reminder {
         this.reminderMessage = reminderMessage;
     }
 
-    public boolean isSent() {
+    public boolean getSent() {
         return isSent;
     }
 
