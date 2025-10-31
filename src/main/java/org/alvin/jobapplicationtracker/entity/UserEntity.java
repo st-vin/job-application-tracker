@@ -1,6 +1,5 @@
 package org.alvin.jobapplicationtracker.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -96,6 +95,13 @@ public class UserEntity {
         this.password = password;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }

@@ -16,7 +16,7 @@ public class SecurityConfig {
                 // Permit all requests without authentication
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 // Disable frame options so the H2 console can render
-                .headers(headers -> headers.frameOptions().disable());
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
     }
