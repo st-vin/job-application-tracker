@@ -37,6 +37,13 @@ public class Reminder {
         this.isSent = isSent;
     }
 
+    public Reminder(ApplicationEntity application, LocalDateTime reminderDate, String reminderMessage, boolean isSent) {
+        this.application = application;
+        this.reminderDate = reminderDate;
+        this.reminderMessage = reminderMessage;
+        this.isSent = isSent;
+    }
+
     public long getId() {
         return id;
     }
