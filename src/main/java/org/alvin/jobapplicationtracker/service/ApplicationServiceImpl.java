@@ -13,8 +13,11 @@ import org.alvin.jobapplicationtracker.exception.ResourceNotFoundException;
 import org.alvin.jobapplicationtracker.repository.ApplicationRepository;
 import org.alvin.jobapplicationtracker.repository.StatusHistoryRepository;
 import org.alvin.jobapplicationtracker.repository.UserRepository;
+import org.alvin.jobapplicationtracker.util.SecurityUtil;
+import org.alvin.jobapplicationtracker.entity.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +35,32 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final UserRepository userRepository;
     private final StatusHistoryRepository statusHistoryRepository;
     private final ApplicationMapper applicationMapper;
+    private final SecurityUtil securityUtil;
+
+    private boolean isAdmin() {
+        return securityUtil.getCurrentUser().getRole() == Role.ADMIN;
+    }
+
+    private void assertOwnershipOrAdmin(ApplicationEntity application) {
+        if (isAdmin()) {
+            return;
+        }
+        Long currentUserId = securityUtil.getCurrentUserId();
+        Long ownerId = application.getUser() != null ? application.getUser().getId() : null;
+        if (ownerId == null || !ownerId.equals(currentUserId)) {
+            throw new AccessDeniedException("You do not have permission to access this resource");
+        }
+    }
 
     @Override
     public ApplicationResponseDTO createApplication(
             ApplicationCreateRequest request, Long userId) {
         log.info("Creating application for user ID: {}", userId);
+
+        // Authorization: regular users can only create for themselves
+        if (!isAdmin() && !securityUtil.getCurrentUserId().equals(userId)) {
+            throw new AccessDeniedException("You cannot create applications for another user");
+        }
 
         // Fetch user
         UserEntity user = userRepository.findById(userId)
@@ -78,6 +102,9 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .findByIdWithUser(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application", "id", id));
 
+        // Authorization
+        assertOwnershipOrAdmin(application);
+
         return applicationMapper.toResponseDTO(application);
     }
 
@@ -85,6 +112,11 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationResponseDTO> getApplicationsByUserId(Long userId) {
         log.debug("Fetching applications for user ID: {}", userId);
+
+        // Authorization: regular users can only access their own list
+        if (!isAdmin() && !securityUtil.getCurrentUserId().equals(userId)) {
+            throw new AccessDeniedException("You cannot access another user's applications");
+        }
 
         return applicationRepository.findByUserId(userId)
                 .stream()
@@ -98,6 +130,11 @@ public class ApplicationServiceImpl implements ApplicationService {
             Long userId, Pageable pageable) {
         log.debug("Fetching paginated applications for user ID: {}", userId);
 
+        // Authorization: regular users can only access their own list
+        if (!isAdmin() && !securityUtil.getCurrentUserId().equals(userId)) {
+            throw new AccessDeniedException("You cannot access another user's applications");
+        }
+
         return applicationRepository.findByUserId(userId, pageable)
                 .map(applicationMapper::toResponseDTO);
     }
@@ -105,7 +142,14 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Override
     @Transactional(readOnly = true)
     public List<ApplicationResponseDTO> getApplicationsByStatus(ApplicationStatus status) {
-        return applicationRepository.findByStatus(status)
+        if (isAdmin()) {
+            return applicationRepository.findByStatus(status)
+                    .stream()
+                    .map(applicationMapper::toResponseDTO)
+                    .collect(Collectors.toList());
+        }
+        Long currentUserId = securityUtil.getCurrentUserId();
+        return applicationRepository.findByStatusAndUserId(status, currentUserId)
                 .stream()
                 .map(applicationMapper::toResponseDTO)
                 .collect(Collectors.toList());
@@ -118,6 +162,9 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         ApplicationEntity application = applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application", "id", id));
+
+        // Authorization
+        assertOwnershipOrAdmin(application);
 
         // Update fields
         application.setCompanyName(request.getCompanyName());
@@ -143,6 +190,9 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         ApplicationEntity application = applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application", "id", id));
+
+        // Authorization
+        assertOwnershipOrAdmin(application);
 
         ApplicationStatus oldStatus = application.getStatus();
 
@@ -171,9 +221,11 @@ public class ApplicationServiceImpl implements ApplicationService {
     public void deleteApplication(Long id) {
         log.info("Deleting application with ID: {}", id);
 
-        if (!applicationRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Application", "id", id);
-        }
+        ApplicationEntity application = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application", "id", id));
+
+        // Authorization
+        assertOwnershipOrAdmin(application);
 
         // Cascade delete handles reminders, notes, history
         applicationRepository.deleteById(id);
@@ -183,7 +235,14 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Override
     @Transactional(readOnly = true)
     public List<ApplicationResponseDTO> searchByCompany(String keyword) {
-        return applicationRepository.findByCompanyNameContainingIgnoreCase(keyword)
+        if (isAdmin()) {
+            return applicationRepository.findByCompanyNameContainingIgnoreCase(keyword)
+                    .stream()
+                    .map(applicationMapper::toResponseDTO)
+                    .collect(Collectors.toList());
+        }
+        Long currentUserId = securityUtil.getCurrentUserId();
+        return applicationRepository.findByCompanyNameContainingIgnoreCaseAndUserId(keyword, currentUserId)
                 .stream()
                 .map(applicationMapper::toResponseDTO)
                 .collect(Collectors.toList());
