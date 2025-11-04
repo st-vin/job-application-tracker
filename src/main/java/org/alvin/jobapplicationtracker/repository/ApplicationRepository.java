@@ -55,6 +55,16 @@ public interface ApplicationRepository extends JpaRepository<ApplicationEntity, 
     List<ApplicationEntity> findByCompanyNameContainingIgnoreCase(@Param("keyword") String keyword);
 
     /**
+     * Find applications by company name containing keyword (case-insensitive) for a specific user
+     * @param keyword The search keyword
+     * @param userId The user ID to scope results
+     * @return List of applications for the user matching the keyword
+     */
+    @Query("SELECT a FROM ApplicationEntity a WHERE a.user.id = :userId AND LOWER(a.companyName) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<ApplicationEntity> findByCompanyNameContainingIgnoreCaseAndUserId(@Param("keyword") String keyword,
+                                                                           @Param("userId") Long userId);
+
+    /**
      * Find all applications ordered by salary descending with pagination
      * @param pageable Pagination information
      * @return Page of applications sorted by salary desc
