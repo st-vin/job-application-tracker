@@ -1,5 +1,7 @@
 package org.alvin.jobapplicationtracker.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,34 +37,55 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = getJwtFromRequest(request);
 
             if (StringUtils.hasText(jwt)) {
+                // Validate token structure first (faster than DB lookup)
+                if (!jwtUtil.isTokenValid(jwt)) {
+                    log.debug("Invalid or expired JWT token");
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 // Extract username from token
                 String username = jwtUtil.extractUsername(jwt);
 
-                // Load user details
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                // Only load user details if authentication is not already set
+                if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                    // Load user details
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                // Validate token
-                if (jwtUtil.validateToken(jwt, userDetails)) {
-                    // Create authentication object
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails,
-                                    null,
-                                    userDetails.getAuthorities()
-                            );
+                    // Validate token against user details
+                    if (jwtUtil.validateToken(jwt, userDetails)) {
+                        // Create authentication object
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities()
+                                );
 
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                        authentication.setDetails(
+                                new WebAuthenticationDetailsSource().buildDetails(request)
+                        );
 
-                    // Set authentication in security context
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                        // Set authentication in security context
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                    log.debug("User '{}' authenticated successfully", username);
+                        log.debug("User '{}' authenticated successfully", username);
+                    } else {
+                        log.warn("Token validation failed for user '{}'", username);
+                        SecurityContextHolder.clearContext();
+                    }
                 }
             }
-        } catch (Exception e) {
+        } catch (ExpiredJwtException e) {
+            log.warn("JWT token expired: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
+        } catch (JwtException | IllegalArgumentException e) {
             log.error("Cannot set user authentication: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
+        } catch (Exception e) {
+            log.error("Unexpected error in JWT filter: {}", e.getMessage(), e);
+            SecurityContextHolder.clearContext();
         }
 
         // Continue filter chain
