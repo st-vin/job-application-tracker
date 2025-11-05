@@ -165,4 +165,23 @@ public class ApplicationController {
 
         return ResponseEntity.ok(applications);
     }
+
+    /**
+     * Filter applications
+     * GET /api/applications/filter?status=APPLIED&minSalary=50000&maxSalary=100000&keyword=engineer
+     */
+    @GetMapping("/filter")
+    public ResponseEntity<List<ApplicationResponseDTO>> filterApplications(
+            @RequestParam(required = false) ApplicationStatus status,
+            @RequestParam(required = false) Double minSalary,
+            @RequestParam(required = false) Double maxSalary,
+            @RequestParam(required = false) String keyword) {
+        log.debug("Filter applications: status={}, minSalary={}, maxSalary={}, keyword={}",
+                status, minSalary, maxSalary, keyword);
+
+        List<ApplicationResponseDTO> applications = applicationService.filterApplications(
+                status, minSalary, maxSalary, keyword);
+
+        return ResponseEntity.ok(applications);
+    }
 }
