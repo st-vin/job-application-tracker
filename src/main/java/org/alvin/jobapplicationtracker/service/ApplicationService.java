@@ -18,4 +18,9 @@ public interface ApplicationService {
     ApplicationResponseDTO updateApplicationStatus(Long id, ApplicationStatus newStatus);
     void deleteApplication(Long id);
     List<ApplicationResponseDTO> searchByCompany(String keyword);
+    List<ApplicationResponseDTO> filterApplications(
+            ApplicationStatus status,
+            Double minSalary,
+            Double maxSalary,
+            String keyword);
 }
