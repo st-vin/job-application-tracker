@@ -17,6 +17,7 @@ import org.alvin.jobapplicationtracker.util.SecurityUtil;
 import org.alvin.jobapplicationtracker.entity.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -244,6 +245,43 @@ public class ApplicationServiceImpl implements ApplicationService {
         Long currentUserId = securityUtil.getCurrentUserId();
         return applicationRepository.findByCompanyNameContainingIgnoreCaseAndUserId(keyword, currentUserId)
                 .stream()
+                .map(applicationMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponseDTO> filterApplications(
+            ApplicationStatus status,
+            Double minSalary,
+            Double maxSalary,
+            String keyword) {
+        Long currentUserId = securityUtil.getCurrentUserId();
+        boolean admin = isAdmin();
+
+        Specification<ApplicationEntity> spec = Specification.where(null);
+
+        if (!admin) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("user").get("id"), currentUserId));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (minSalary != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("salary"), minSalary));
+        }
+        if (maxSalary != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("salary"), maxSalary));
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            String kw = "%" + keyword.toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("companyName")), kw),
+                    cb.like(cb.lower(root.get("position")), kw)
+            ));
+        }
+
+        return applicationRepository.findAll(spec).stream()
                 .map(applicationMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
