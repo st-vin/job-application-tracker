@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.alvin.jobapplicationtracker.entity.ApplicationStatus.*;
+import static org.alvin.jobapplicationtracker.entity.Role.ADMIN;
 import static org.alvin.jobapplicationtracker.entity.Role.USER;
 
 @SpringBootApplication
@@ -59,7 +60,7 @@ public class JobapplicationtrackerApplication {
                 return;
             }
 
-            UserEntity ryan = new UserEntity("Ryan", "Coogler", "ryancoogler@gmail.com", "nicepasswordryan", USER);
+            UserEntity ryan = new UserEntity("Ryan", "Coogler", "ryancoogler@gmail.com", "nicepasswordryan", ADMIN);
             UserEntity ford = new UserEntity("Ford", "Coppola", "fordcoppola@email.com", "TheGodfather", USER);
             UserEntity wim = new UserEntity("Wim", "Wenders", "wenderwim@hotmail.com", "perfectDays", USER);
 
