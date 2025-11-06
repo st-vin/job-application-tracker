@@ -37,11 +37,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless API
+                .cors(cors -> {})
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints (no authentication required)
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
                         .requestMatchers("/h2-console/**").permitAll() // H2 console (dev only)
+                        // Swagger / OpenAPI (dev & docs)
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                         // Role-based endpoint access
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // Admin-only endpoints
