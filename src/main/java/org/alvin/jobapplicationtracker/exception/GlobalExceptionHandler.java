@@ -1,14 +1,17 @@
 package org.alvin.jobapplicationtracker.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,19 +19,24 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private ApiError buildError(HttpServletRequest request, HttpStatus status, String message) {
+        return ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .build();
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+    public ResponseEntity<ApiError> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
         log.error("Resource not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder(ex, HttpStatus.NOT_FOUND, ex.getMessage()).build();
-
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(error);
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        return ResponseEntity.status(status).body(buildError(request, status, ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiError> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
         log.error("Validation failed: {}", ex.getMessage());
 
         Map<String, String> fieldErrors = new HashMap<>();
@@ -38,31 +46,37 @@ public class GlobalExceptionHandler {
             fieldErrors.put(fieldName, errorMessage);
         });
 
-        // Return just the field error map, or wrap it in a ResponseEntity
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(fieldErrors);
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ApiError payload = buildError(request, status, "Validation failed");
+        payload.setFieldErrors(fieldErrors);
+        return ResponseEntity.status(status).body(payload);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
         log.error("Illegal argument: {}", ex.getMessage());
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(buildError(request, status, ex.getMessage()));
+    }
 
-        ErrorResponse error = ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, ex.getMessage()).build();
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Access denied: {}", ex.getMessage());
+        HttpStatus status = HttpStatus.FORBIDDEN;
+        return ResponseEntity.status(status).body(buildError(request, status, "Access denied"));
+    }
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(error);
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuth(AuthenticationException ex, HttpServletRequest request) {
+        log.warn("Authentication error: {}", ex.getMessage());
+        HttpStatus status = HttpStatus.UNAUTHORIZED;
+        return ResponseEntity.status(status).body(buildError(request, status, "Unauthorized"));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+    public ResponseEntity<ApiError> handleGenericException(Exception ex, HttpServletRequest request) {
         log.error("Unexpected error occurred", ex);
-
-        ErrorResponse error = ErrorResponse.builder(ex, HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred").build();
-
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(error);
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        return ResponseEntity.status(status).body(buildError(request, status, "An unexpected error occurred"));
     }
 }
