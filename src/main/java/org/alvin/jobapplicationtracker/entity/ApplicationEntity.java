@@ -92,7 +92,7 @@ public class ApplicationEntity {
         this.companyName = companyName;
         this.position = position;
         this.status = status;
-        this.appliedDate = appliedDate;
+        this.appliedDate = LocalDate.from(createdAt);
         this.salary = salary;
         this.jobBoardSource = jobBoardSource;
         this.jobUrl = jobUrl;
