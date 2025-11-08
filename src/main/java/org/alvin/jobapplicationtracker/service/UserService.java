@@ -13,4 +13,6 @@ public interface UserService {
     UserResponseDTO updateUser(Long id, UserRegistrationRequest request);
     void deleteUser(Long id);
     boolean existsByEmail(String email);
+    void verifyEmail(String token);
+    void resendVerificationEmail(String email);
 }
