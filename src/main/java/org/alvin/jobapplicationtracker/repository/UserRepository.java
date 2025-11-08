@@ -262,4 +262,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
      */
     @Override
     long count();
+
+    /**
+     * Find user by verification token
+     * @param token The verification token
+     * @return Optional user entity
+     */
+    Optional<UserEntity> findByVerificationToken(String token);
 }
