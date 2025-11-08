@@ -13,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +28,10 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private static final SecureRandom secureRandom = new SecureRandom();
+    private static final int TOKEN_LENGTH = 32;
+    private static final int TOKEN_EXPIRY_HOURS = 24;
 
     @Override
     public UserResponseDTO registerUser(UserRegistrationRequest request) {
@@ -37,9 +44,28 @@ public class UserServiceImpl implements UserService {
         UserEntity user = userMapper.toEntity(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER); // Assign default role
+        user.setEmailVerified(false);
+
+        // Generate verification token
+        String verificationToken = generateVerificationToken();
+        user.setVerificationToken(verificationToken);
+        user.setTokenExpiry(LocalDateTime.now().plusHours(TOKEN_EXPIRY_HOURS));
 
         UserEntity savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getId());
+
+        // Send verification email
+        try {
+            emailService.sendVerificationEmail(
+                    savedUser.getEmail(),
+                    verificationToken,
+                    savedUser.getFirstName()
+            );
+            log.info("Verification email sent to: {}", savedUser.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send verification email to: {}", savedUser.getEmail(), e);
+            // Don't fail registration if email fails - user can request resend
+        }
 
         return userMapper.toResponseDTO(savedUser);
     }
@@ -122,5 +148,50 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmailIgnoreCase(email);
+    }
+
+    @Override
+    public void verifyEmail(String token) {
+        UserEntity user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired verification token"));
+
+        if (user.getTokenExpiry() != null && user.getTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Verification token has expired");
+        }
+
+        if (user.getEmailVerified()) {
+            throw new IllegalArgumentException("Email is already verified");
+        }
+
+        user.setEmailVerified(true);
+        user.setVerificationToken(null);
+        user.setTokenExpiry(null);
+        userRepository.save(user);
+        log.info("Email verified for user: {}", user.getEmail());
+    }
+
+    @Override
+    public void resendVerificationEmail(String email) {
+        UserEntity user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+
+        if (user.getEmailVerified()) {
+            throw new IllegalArgumentException("Email is already verified");
+        }
+
+        // Generate new token
+        String verificationToken = generateVerificationToken();
+        user.setVerificationToken(verificationToken);
+        user.setTokenExpiry(LocalDateTime.now().plusHours(TOKEN_EXPIRY_HOURS));
+        userRepository.save(user);
+
+        emailService.sendVerificationEmail(user.getEmail(), verificationToken, user.getFirstName());
+        log.info("Verification email resent to: {}", user.getEmail());
+    }
+
+    private String generateVerificationToken() {
+        byte[] tokenBytes = new byte[TOKEN_LENGTH];
+        secureRandom.nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
     }
 }
